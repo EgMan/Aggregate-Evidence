@@ -35,7 +35,7 @@ def gather_evidence(dir):
             evidence = Evidence(dir, file)
             if evidence.testcase_num != 0:
                 evidences.append(evidence)
-                cprint("\t{0} {1}({2} test cases, {3} failures, {4} errors)".format(file, bcolors.OKBLUE, evidence.testcase_num, evidence.failure_num, evidence.error_num), bcolors.ENDC)
+                cprint("\t{0} {1}({2} completed tests, {3} failures, {4} errors)".format(file, bcolors.OKBLUE, evidence.testcase_num, evidence.failure_num, evidence.error_num), bcolors.ENDC)
 
                 #This is the logic for finding the superset to use
                 #Assuming there are no duplicates, if there exists a test case superset, it must be the suite with the most test cases
@@ -48,7 +48,7 @@ def gather_evidence(dir):
         cprint("No evidence was found in this directory", bcolors.WARNING)
         quit()
 
-    print("Using {0} as a superset".format(evidence_superset.file_name))
+    cprint("Using {0} as a superset".format(evidence_superset.file_name), bcolors.OKGREEN)
     evidences.remove(evidence_superset)
     return (evidences, evidence_superset)
     
@@ -132,11 +132,12 @@ class Evidence:
         for child in node:
             #Assure that the inexes of testcases which are children of a testsuite
             #are prefixed with that suite's name
-            if node.tag == 'testsuite':
-                self.__index_evidence_helper(child, evidence_dict, node.get('name'))
-            else:
+            if node.tag != 'testsuite':
                 self.__index_evidence_helper(child, evidence_dict, index_prefix)
-        if node.tag == 'testcase':
+            elif node.get('name').lower() != "unrooted tests":
+                self.__index_evidence_helper(child, evidence_dict, node.get('name'))
+
+        if node.tag == 'testcase' and node.get('incomplete') != "true":
             #setup index for easy access
             if index_prefix == None:
                 index = node.get('name')
