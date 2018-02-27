@@ -110,7 +110,7 @@ def dump_to_file(evidence, file_path, file_name):
     with open(location_andfile, "w") as evidence_file:
         #This substitution is done because ElementTreeAPI's empty xml element syntax looks like
         #<testcase></testcase>, but we want it to look like <testcase/>
-        output_text = re.sub(r'(<testcase[^>]*)>\s*</testcase>', r'\1 />'.decode('utf-8'),ET.tostring(evidence.root_elem).decode('utf-8'))
+        output_text = re.sub(r'(<testcase[^>]*)>\s*</testcase>', r'\1 />', ET.tostring(evidence.root_elem).decode('utf-8'))
         evidence_file.write(output_text)
         print("Evidence written to {0}".format(location_andfile))
 
