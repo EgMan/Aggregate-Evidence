@@ -2,10 +2,7 @@
 Todo:
 add indicator when at least one Ignored Test warning was thrown to explain why this could have happened
 make sure the difference between errors and failures is treated correctly
-test Junit 3, 4, 5
-test python 2, 3
-Maybe:
-add superset force argument
+add argument to force superset
 add argumentparser support
 '''
 import xml.etree.ElementTree as ET
@@ -55,15 +52,16 @@ def gather_evidence(dir):
 def aggregate(evidenceFrom, evidenceTo):
     for testcaseFrom in evidenceFrom.elem_dict:
         testCaseFromElem = evidenceFrom.elem_dict[testcaseFrom];
-        if testCaseFromElem.find('failure') == None and testCaseFromElem.get('incomplete') != "true":
-            if testcaseFrom in evidenceTo.elem_dict:
-                testcaseTo = evidenceTo.elem_dict[testcaseFrom]
-                failureToRemove = testcaseTo.find('failure')
-                if failureToRemove != None:
-                    testcaseTo.remove(failureToRemove)
-                    cprint("Removed failure {0} from superset because it passes in {1}".format(testcaseTo.get('name'), evidenceFrom.file_name), bcolors.OKGREEN)
-            elif not testcaseFrom.startswith('Unrooted Tests'):
-                cprint("WARNING: ignoring testcase {0} not found in superset".format(testcaseFrom), bcolors.WARNING)
+        for failureType in ['failure', 'error']:
+            if testCaseFromElem.find(failureType) == None and testCaseFromElem.get('incomplete') != "true":
+                if testcaseFrom in evidenceTo.elem_dict:
+                    testcaseTo = evidenceTo.elem_dict[testcaseFrom]
+                    failureToRemove = testcaseTo.find(failureType)
+                    if failureToRemove != None:
+                        testcaseTo.remove(failureToRemove)
+                        cprint("Removed {0} {1} from superset because it passes in {2}".format(failureType, testcaseTo.get('name'), evidenceFrom.file_name), bcolors.OKGREEN)
+                elif not testcaseFrom.startswith('Unrooted Tests'):
+                    cprint("WARNING: ignoring testcase {0} not found in superset".format(testcaseFrom), bcolors.WARNING)
 
 def post_process(evidence):
     failing_tests = []
