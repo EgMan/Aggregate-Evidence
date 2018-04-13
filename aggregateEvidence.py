@@ -9,20 +9,23 @@ import os
 import re
 
 def main():
-    directory = gather_params()
-    evidences, evidence_superset = gather_evidence(directory)
+    directory, superset_force = gather_params()
+    evidences, evidence_superset = gather_evidence(directory, superset_force)
     aggregate(evidences, evidence_superset)
     post_process(evidence_superset)
     dump_to_file(evidence_superset, directory, "_aggregated_{0}".format(evidence_superset.file_name))
 
 def gather_params():
-    if len(sys.argv) > 1:
-        return sys.argv[1]
-    return "./"
+    if len(sys.argv) == 2:
+        return (sys.argv[1], "")
+    if len(sys.argv) == 3:
+        return (sys.argv[1], sys.argv[2])
+    return ("./", "")
 
-def gather_evidence(dir):
+def gather_evidence(dir, superset_force):
     evidences = []
     evidence_superset = None
+    forced_superset_found = False
     print("\nLooking for evidence in {0} :".format(dir))
     for file in os.listdir(dir):
         if file.endswith(".xml"):
@@ -34,10 +37,15 @@ def gather_evidence(dir):
                 #This is the logic for finding the superset to use
                 #Assuming there are no duplicates, if there exists a test case superset, it must be the suite with the most test cases
                 #If suites are tied for the most test cases, the suite with the least failures is used
-                if evidence_superset == None or evidence.testcase_num > evidence_superset.testcase_num:
+                #supersets can be forced, but the script will fail if the forced superset is not actually a superset
+                if file == superset_force:
                     evidence_superset = evidence
-                elif evidence.testcase_num == evidence_superset.testcase_num and evidence.failure_num < evidence_superset.failure_num:
-                    evidence_superset = evidence
+                    forced_superset_found = True
+                if not forced_superset_found:
+                    if evidence_superset == None or evidence.testcase_num > evidence_superset.testcase_num:
+                        evidence_superset = evidence
+                    elif evidence.testcase_num == evidence_superset.testcase_num and (evidence.failure_num + evidence.error_num) < (evidence_superset.failure_num + evidence_superset.error_num):
+                        evidence_superset = evidence
     if evidence_superset == None:
         cprint("No evidence was found in this directory", bcolors.FAIL)
         quit()
