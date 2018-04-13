@@ -1,6 +1,6 @@
+#!/usr/bin/env python3
 '''
 Todo:
-add argument to force superset
 add argumentparser support
 '''
 import xml.etree.ElementTree as ET
