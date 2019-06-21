@@ -62,17 +62,22 @@ def aggregate(evidences, evidenceTo):
         for testcaseFrom in evidenceFrom.elem_dict:
             testCaseFromElem = evidenceFrom.elem_dict[testcaseFrom];
             for failureType in ['failure', 'error']:
-                if testCaseFromElem.find(failureType) == None and testCaseFromElem.get('incomplete') != "true":
-                    if testcaseFrom in evidenceTo.elem_dict:
-                        testcaseTo = evidenceTo.elem_dict[testcaseFrom]
-                        failureToRemove = testcaseTo.find(failureType)
-                        if failureToRemove != None:
-                            testcaseTo.remove(failureToRemove)
-                            stitchedTestIndicator = True
-                            cprint("Removed {0} {1} from superset because it passes in {2}".format(failureType, testcaseTo.get('name'), evidenceFrom.file_name), bcolors.OKGREEN)
-                    elif not testcaseFrom.startswith('Unrooted Tests'):
-                        ignoredTestIndicator = True
-                        cprint("WARNING: ignoring testcase {0} not found in superset".format(testcaseFrom), bcolors.FAIL)
+                if testCaseFromElem.get('incomplete') != "true":
+                    failure = testCaseFromElem.find(failureType)
+                    if failure == None:
+                        if testcaseFrom in evidenceTo.elem_dict:
+                            testcaseTo = evidenceTo.elem_dict[testcaseFrom]
+                            failureToRemove = testcaseTo.find(failureType)
+                            if failureToRemove != None:
+                                testcaseTo.remove(failureToRemove)
+                                stitchedTestIndicator = True
+                                cprint("Removed {0} {1} from superset because it passes in {2}".format(failureType, testcaseTo.get('name'), evidenceFrom.file_name), bcolors.OKGREEN)
+                        elif not testcaseFrom.startswith('Unrooted Tests'):
+                            ignoredTestIndicator = True
+                            cprint("WARNING: ignoring testcase {0} not found in superset".format(testcaseFrom), bcolors.FAIL)
+                    else:
+                        if evidenceFrom.tm_modified > evidenceTo.tm_modified:
+                            ET.SubElement(testcaseTo, failureType)
     if stitchedTestIndicator == False:
         cprint("Superset {0} is the best run so far and none of its failures have ever passed.  Aggregated evidence will still be written, but it's just a copy of the superset.".format(evidenceTo.file_name), bcolors.WARNING)
     if ignoredTestIndicator == True:
@@ -137,6 +142,7 @@ class Evidence:
         self.file_name = file_name
         self.file_path = os.path.join(root_path, file_name)
         self.root_elem = ET.parse(self.file_path).getroot()
+        self.tm_modified = os.path.getmtime(self.file_path)
         self.elem_dict = self.__index_evidence()
 
     def __index_evidence(self):
